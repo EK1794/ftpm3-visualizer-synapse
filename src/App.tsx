@@ -3,6 +3,7 @@ import { ipcActions, listenToSidecarEvents } from './ipc';
 import { CameraPreview } from './components/CameraPreview';
 import { StagingArea } from './components/StagingArea';
 import { HistoryPanel, TrackHistoryItem } from './components/HistoryPanel';
+import { OutputDisplayArea } from './components/OutputDisplayArea';
 
 
 function App() {
@@ -16,16 +17,22 @@ function App() {
   const [stagingAlbum, setStagingAlbum] = useState('');
   const [forceImage, setForceImage] = useState(false);
   const [history, setHistory] = useState<TrackHistoryItem[]>([]);
+  const [historyPointer, setHistoryPointer] = useState<number>(0);
+  const [displayMode, setDisplayMode] = useState<'text' | 'image'>('text');
 
   const stagingRef = useRef({ title: '', artist: '', album: '', forceImage: false });
+  const historyRef = useRef<TrackHistoryItem[]>([]);
 
   useEffect(() => {
     stagingRef.current = { title: stagingTitle, artist: stagingArtist, album: stagingAlbum, forceImage };
   }, [stagingTitle, stagingArtist, stagingAlbum, forceImage]);
 
+  useEffect(() => {
+    historyRef.current = history;
+  }, [history]);
+
   const handleTriggerOutput = () => {
     const current = stagingRef.current;
-    ipcActions.triggerOutput(current.title, current.artist, current.album, null, current.forceImage);
     setHistory(prev => [{
       id: Date.now(),
       title: current.title || 'Unknown Title',
@@ -33,6 +40,11 @@ function App() {
       album: current.album || '',
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }, ...prev]);
+    setHistoryPointer(0);
+  };
+
+  const handleUpdateHistoryItem = (id: number, updates: Partial<TrackHistoryItem>) => {
+    setHistory(prev => prev.map(item => item.id === id ? { ...item, ...updates } : item));
   };
 
   useEffect(() => {
@@ -50,10 +62,19 @@ function App() {
         setStagingTitle(data.title || '');
         setStagingArtist(data.artist || '');
         setStagingAlbum(data.album || '');
-      } else if (data.event === 'MidiMessageEvent') {
-        if (data.isNoteOn) {
+      } else if (data.event === 'MidiAction') {
+        const { action } = data.payload;
+        if (action === 'go') {
           handleTriggerOutput();
+        } else if (action === 'undo') {
+          setHistoryPointer(prev => Math.min(prev + 1, Math.max(0, historyRef.current.length - 1)));
+        } else if (action === 'redo') {
+          setHistoryPointer(prev => Math.max(0, prev - 1));
+        } else if (action === 'toggle') {
+          setDisplayMode(prev => prev === 'text' ? 'image' : 'text');
         }
+      } else if (data.event === 'MidiMessageEvent') {
+        // Legacy event (ignored now that backend is updated)
       } else if (data.event === 'ack') {
         console.log('Command ACK:', data);
       } else if (data.event === 'error') {
@@ -112,9 +133,17 @@ function App() {
           />
         </section>
 
-        {/* Right Column: History & settings */}
-        <section className="flex flex-col w-1/4 bg-synapse-800/30 border-l border-synapse-700/50">
-          <HistoryPanel history={history} />
+        {/* Right Column: History & Output Display */}
+        <section className="flex flex-col w-1/3 bg-synapse-800/30 border-l border-synapse-700/50">
+          <OutputDisplayArea 
+            track={history[historyPointer]} 
+            displayMode={displayMode} 
+          />
+          <HistoryPanel 
+            history={history} 
+            historyPointer={historyPointer}
+            onUpdateItem={handleUpdateHistoryItem} 
+          />
         </section>
       </main>
     </div>

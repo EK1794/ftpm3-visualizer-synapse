@@ -1,5 +1,3 @@
-import React from 'react';
-
 type Props = {
     slotIndex: number;
     devices: { id: string, name: string }[];
