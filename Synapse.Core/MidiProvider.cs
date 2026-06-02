@@ -7,9 +7,11 @@ namespace Synapse.Core;
 public class MidiProvider : IDisposable
 {
     private MidiIn? _midiIn;
+    private readonly IStdoutWriter _writer;
 
-    public MidiProvider()
+    public MidiProvider(IStdoutWriter writer)
     {
+        _writer = writer;
         if (MidiIn.NumberOfDevices > 0)
         {
             try
@@ -17,16 +19,16 @@ public class MidiProvider : IDisposable
                 _midiIn = new MidiIn(0); // Connect to first available MIDI device
                 _midiIn.MessageReceived += MidiIn_MessageReceived;
                 _midiIn.Start();
-                Program.SafeWriteLine(JsonSerializer.Serialize(new { @event = "log", message = $"Connected to MIDI Device: {MidiIn.DeviceInfo(0).ProductName}" }));
+                _writer.WriteLine(JsonSerializer.Serialize(new { @event = "log", message = $"Connected to MIDI Device: {MidiIn.DeviceInfo(0).ProductName}" }));
             }
             catch (Exception ex)
             {
-                Program.SafeWriteLine(JsonSerializer.Serialize(new { @event = "error", message = "MIDI Init Failed: " + ex.Message }));
+                _writer.WriteLine(JsonSerializer.Serialize(new { @event = "error", message = "MIDI Init Failed: " + ex.Message }));
             }
         }
         else
         {
-            Program.SafeWriteLine(JsonSerializer.Serialize(new { @event = "error", message = "No MIDI Devices found." }));
+            _writer.WriteLine(JsonSerializer.Serialize(new { @event = "error", message = "No MIDI Devices found." }));
         }
     }
 
@@ -39,7 +41,7 @@ public class MidiProvider : IDisposable
             // Debug log to identify DDJ-SP1 channel mapping
             if (isNoteOn)
             {
-                Program.SafeWriteLine(JsonSerializer.Serialize(new { 
+                _writer.WriteLine(JsonSerializer.Serialize(new { 
                     @event = "log", 
                     message = $"DEBUG_MIDI: Channel={noteOnEvent.Channel}, Note={noteOnEvent.NoteNumber}" 
                 }));
@@ -62,7 +64,7 @@ public class MidiProvider : IDisposable
                     _ => "unknown"
                 };
 
-                Program.SafeWriteLine(JsonSerializer.Serialize(new 
+                _writer.WriteLine(JsonSerializer.Serialize(new 
                 { 
                     @event = "MidiAction", 
                     payload = new { slotIndex = slotIndex, action = action }

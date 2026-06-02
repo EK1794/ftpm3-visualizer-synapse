@@ -17,10 +17,12 @@ public class OpenCvCameraProvider : ICameraProvider
     private CancellationTokenSource? _cts;
     private Task? _captureTask;
     private readonly int _slotIndex;
+    private readonly IStdoutWriter _writer;
 
-    public OpenCvCameraProvider(int slotIndex)
+    public OpenCvCameraProvider(int slotIndex, IStdoutWriter writer)
     {
         _slotIndex = slotIndex;
+        _writer = writer;
     }
 
     public Task ConnectAsync(string deviceId)
@@ -75,7 +77,7 @@ public class OpenCvCameraProvider : ICameraProvider
                     timestamp = DateTime.UtcNow.ToString("O")
                 };
                 
-                Console.WriteLine(JsonSerializer.Serialize(evt));
+                _writer.WriteLine(JsonSerializer.Serialize(evt));
             }
 
             int delayMs = (1000 / TargetFps) - (int)sw.ElapsedMilliseconds;
