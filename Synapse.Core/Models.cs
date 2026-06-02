@@ -27,12 +27,12 @@ public class CommandEnvelope
 public record AssignCameraPayload(int slotIndex, string deviceId);
 public record TriggerOcrPayload(int slotIndex);
 public record UpdateStagingBufferPayload(string title, string artist, string album, bool isImageForced);
-public record TriggerOutputPayload(string title, string artist, string album, string? base64Image, bool isImageForced);
 
 // Event Payloads (C# -> UI)
 public record CameraFrameEvent(int slotIndex, string base64Image, string timestamp);
 public record OcrResultEvent(int slotIndex, string title, string artist, string album);
 public record MidiMessageEvent(int noteNumber, int velocity, bool isNoteOn);
+public record MidiActionEvent(int slotIndex, string action);
 
 // --- 3. Hardware Interfaces ---
 public interface ICameraProvider

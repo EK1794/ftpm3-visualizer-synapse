@@ -17,16 +17,16 @@ public class MidiProvider : IDisposable
                 _midiIn = new MidiIn(0); // Connect to first available MIDI device
                 _midiIn.MessageReceived += MidiIn_MessageReceived;
                 _midiIn.Start();
-                Console.WriteLine(JsonSerializer.Serialize(new { @event = "log", message = $"Connected to MIDI Device: {MidiIn.DeviceInfo(0).ProductName}" }));
+                Program.SafeWriteLine(JsonSerializer.Serialize(new { @event = "log", message = $"Connected to MIDI Device: {MidiIn.DeviceInfo(0).ProductName}" }));
             }
             catch (Exception ex)
             {
-                Console.WriteLine(JsonSerializer.Serialize(new { @event = "error", message = "MIDI Init Failed: " + ex.Message }));
+                Program.SafeWriteLine(JsonSerializer.Serialize(new { @event = "error", message = "MIDI Init Failed: " + ex.Message }));
             }
         }
         else
         {
-            Console.WriteLine(JsonSerializer.Serialize(new { @event = "error", message = "No MIDI Devices found." }));
+            Program.SafeWriteLine(JsonSerializer.Serialize(new { @event = "error", message = "No MIDI Devices found." }));
         }
     }
 
@@ -34,23 +34,40 @@ public class MidiProvider : IDisposable
     {
         if (e.MidiEvent is NoteOnEvent noteOnEvent)
         {
-            Console.WriteLine(JsonSerializer.Serialize(new 
-            { 
-                @event = "MidiMessageEvent", 
-                noteNumber = noteOnEvent.NoteNumber, 
-                velocity = noteOnEvent.Velocity, 
-                isNoteOn = noteOnEvent.Velocity > 0 
-            }));
-        }
-        else if (e.MidiEvent is NoteEvent noteEvent && noteEvent.CommandCode == MidiCommandCode.NoteOff)
-        {
-            Console.WriteLine(JsonSerializer.Serialize(new 
-            { 
-                @event = "MidiMessageEvent", 
-                noteNumber = noteEvent.NoteNumber, 
-                velocity = noteEvent.Velocity, 
-                isNoteOn = false
-            }));
+            bool isNoteOn = noteOnEvent.Velocity > 0;
+
+            // Debug log to identify DDJ-SP1 channel mapping
+            if (isNoteOn)
+            {
+                Program.SafeWriteLine(JsonSerializer.Serialize(new { 
+                    @event = "log", 
+                    message = $"DEBUG_MIDI: Channel={noteOnEvent.Channel}, Note={noteOnEvent.NoteNumber}" 
+                }));
+            }
+
+            // Issue #7: MIDI Multi-mapping (16 Pad Routing)
+            if (isNoteOn)
+            {
+                // Channel 8 = Left Deck (Slots 0, 1)
+                // Channel 9 = Right Deck (Slots 2, 3)
+                int baseSlot = (noteOnEvent.Channel == 9) ? 2 : 0;
+                int slotIndex = baseSlot + (noteOnEvent.NoteNumber / 4);
+                int actionIndex = noteOnEvent.NoteNumber % 4;
+                string action = actionIndex switch
+                {
+                    0 => "go",
+                    1 => "undo",
+                    2 => "redo",
+                    3 => "toggle",
+                    _ => "unknown"
+                };
+
+                Program.SafeWriteLine(JsonSerializer.Serialize(new 
+                { 
+                    @event = "MidiAction", 
+                    payload = new { slotIndex = slotIndex, action = action }
+                }));
+            }
         }
     }
 

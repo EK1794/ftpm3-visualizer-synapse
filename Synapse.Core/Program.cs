@@ -151,26 +151,7 @@ class Program
                 SafeWriteLine(JsonSerializer.Serialize(new { @event = "ack", command = envelope.command, title = updatePayload?.title }));
                 break;
 
-            case "TriggerOutput":
-                var outPayload = JsonSerializer.Deserialize<TriggerOutputPayload>(envelope.payload.GetRawText());
-                if (outPayload != null)
-                {
-                    try
-                    {
-                        await OutputManager.WriteNextTrackAsync(
-                            outPayload.title ?? "", 
-                            outPayload.artist ?? "", 
-                            outPayload.album ?? "", 
-                            outPayload.base64Image
-                        );
-                        SafeWriteLine(JsonSerializer.Serialize(new { @event = "ack", command = envelope.command, success = true }));
-                    }
-                    catch (Exception ex)
-                    {
-                        SafeWriteLine(JsonSerializer.Serialize(new { @event = "error", message = "Output write failed: " + ex.Message }));
-                    }
-                }
-                break;
+
 
             case "GetCameraDevices":
                 // Issue #2: Run WMI query on background thread to prevent blocking the IPC loop.
