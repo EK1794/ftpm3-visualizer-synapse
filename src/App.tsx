@@ -37,7 +37,8 @@ function App() {
 
   useEffect(() => {
     const unlistenPromise = listenToSidecarEvents((data) => {
-      if (data.event === 'sidecar_ready') {
+      // Issue #9: Accept both 'sidecar_ready' (legacy push) and 'StatusResponse' (pull handshake)
+      if (data.event === 'sidecar_ready' || data.event === 'StatusResponse') {
         setStatus('Sidecar Connected');
         // Fetch devices on startup
         ipcActions.getDevices();
@@ -60,6 +61,13 @@ function App() {
       } else {
         console.log('Unhandled Sidecar Event:', data);
       }
+    });
+
+    // Issue #9: After listener is registered, explicitly ask Sidecar for its status.
+    // This eliminates the race condition where sidecar_ready was emitted
+    // before the listener was set up.
+    unlistenPromise.then(() => {
+      ipcActions.getStatus();
     });
 
     return () => {

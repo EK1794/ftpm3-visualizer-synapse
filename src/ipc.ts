@@ -28,6 +28,7 @@ export function listenToSidecarEvents(onEvent: (data: any) => void) {
 
 // Concrete IPC actions
 export const ipcActions = {
+    getStatus: () => sendCommandToSidecar('GetStatus', {}),
     getDevices: () => sendCommandToSidecar('GetCameraDevices', {}),
     assignCamera: (slotIndex: number, deviceId: string) => sendCommandToSidecar('AssignCamera', { slotIndex, deviceId }),
     triggerOcr: (slotIndex: number) => sendCommandToSidecar('TriggerOcr', { slotIndex }),

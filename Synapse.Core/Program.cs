@@ -202,6 +202,12 @@ class Program
                 });
                 break;
 
+            case "GetStatus":
+                // Issue #9: Pull-based handshake. Frontend calls this after listener registration
+                // to reliably detect Sidecar readiness, regardless of startup timing.
+                SafeWriteLine(JsonSerializer.Serialize(new { @event = "StatusResponse", status = "Ready" }));
+                break;
+
             default:
                 SafeWriteLine(JsonSerializer.Serialize(new { @event = "unknown_command", command = envelope.command }));
                 break;
