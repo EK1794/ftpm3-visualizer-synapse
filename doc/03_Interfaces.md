@@ -35,20 +35,26 @@ namespace Synapse.Core
     public record AssignCameraPayload(int slotIndex, string deviceId);
     public record TriggerOcrPayload(int slotIndex);
     public record UpdateStagingBufferPayload(string title, string artist, string album, bool isImageForced);
+    public record GetStatusPayload(); // Handshake (Issue #9)
 
     // Event Payloads (C# -> UI)
     public record CameraFrameEvent(int slotIndex, string base64Image, string timestamp);
     public record OcrResultEvent(int slotIndex, string title, string artist, string album);
-    public record MidiMessageEvent(int noteNumber, int velocity, bool isNoteOn);
+    public record StatusResponseEvent(string status); // Handshake (Issue #9)
+    
+    // ★新規: MIDIアクションイベント (GO, Undo, Redo, Toggle)
+    public record MidiActionEvent(int slotIndex, string action);
 
     // --- 3. Hardware Interfaces ---
     public interface ICameraProvider
     {
         string DeviceId { get; }
+        string DeviceName { get; }
+        bool CanSetExposure { get; }
+        bool CanSetFocus { get; }
         int TargetFps { get; set; } 
         Task ConnectAsync(string deviceId);
         void Disconnect();
-        // 内部の Channel にフレームバイト配列を流し込む想定
     }
 
     public interface IOcrEngine
@@ -56,3 +62,4 @@ namespace Synapse.Core
         Task<OcrResultEvent> RecognizeTextAsync(byte[] imageBytes, CancellationToken cancellationToken);
     }
 }
+```
