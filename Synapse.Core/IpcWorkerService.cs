@@ -89,7 +89,7 @@ public class IpcWorkerService : BackgroundService
         }
     }
 
-    private async Task HandleCommand(CommandEnvelope envelope, CancellationToken stoppingToken)
+    public async Task HandleCommand(CommandEnvelope envelope, CancellationToken stoppingToken)
     {
         switch (envelope.command)
         {

@@ -36,25 +36,31 @@ public class MidiProvider : IDisposable
     {
         if (e.MidiEvent is NoteOnEvent noteOnEvent)
         {
-            bool isNoteOn = noteOnEvent.Velocity > 0;
+            ProcessNoteOn(noteOnEvent.Channel, noteOnEvent.NoteNumber, noteOnEvent.Velocity);
+        }
+    }
 
-            // Debug log to identify DDJ-SP1 channel mapping
+    public void ProcessNoteOn(int channel, int noteNumber, int velocity)
+    {
+        bool isNoteOn = velocity > 0;
+
+            // Debug log to identify MIDI controller channel mapping
             if (isNoteOn)
             {
                 _writer.WriteLine(JsonSerializer.Serialize(new { 
                     @event = "log", 
-                    message = $"DEBUG_MIDI: Channel={noteOnEvent.Channel}, Note={noteOnEvent.NoteNumber}" 
+                    message = $"DEBUG_MIDI: Channel={channel}, Note={noteNumber}" 
                 }));
             }
 
             // Issue #7: MIDI Multi-mapping (16 Pad Routing)
             if (isNoteOn)
             {
-                // Channel 8 = Left Deck (Slots 0, 1)
-                // Channel 9 = Right Deck (Slots 2, 3)
-                int baseSlot = (noteOnEvent.Channel == 9) ? 2 : 0;
-                int slotIndex = baseSlot + (noteOnEvent.NoteNumber / 4);
-                int actionIndex = noteOnEvent.NoteNumber % 4;
+                // Channel 8 = Left Source (Slots 0, 1)
+                // Channel 9 = Right Source (Slots 2, 3)
+                int baseSlot = (channel == 9) ? 2 : 0;
+                int slotIndex = baseSlot + (noteNumber / 4);
+                int actionIndex = noteNumber % 4;
                 string action = actionIndex switch
                 {
                     0 => "go",
@@ -71,7 +77,6 @@ public class MidiProvider : IDisposable
                 }));
             }
         }
-    }
 
     public void Dispose()
     {

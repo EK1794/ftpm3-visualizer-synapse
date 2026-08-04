@@ -5,7 +5,7 @@
 
 ### 1. アクター（システムの登場人物）
 * **オペレーター (OP):** 本システムの主操作者。Web UIやMIDIコントローラーを操作し、表示の管理を行う。
-* **ゲストDJ (DJ):** 楽曲をプレイし、情報ソースを提示する。本システムを直接は操作しない。
+* **ゲスト (ライブパフォーマー):** 楽曲をプレイし、情報ソースを提示する。本システムを直接は操作しない。
 * **プロジェクター/観客:** 最終的なアウトプット（楽曲情報）を受け取る対象。
 
 ### 2. ユースケース図 (Mermaid)
@@ -13,7 +13,7 @@
 ```mermaid
 flowchart LR
     OP(["👤 オペレーター (OP)"])
-    DJ(["🎧 ゲストDJ"])
+    DJ(["🎧 ゲスト"])
     Audience(["📽 プロジェクター / 観客"])
 
     subgraph Synapse ["LiveEvent Visualizer 'Synapse' (Tauri + C#)"]
@@ -41,13 +41,13 @@ flowchart LR
 ```mermaid
 sequence diagram
     autonumber
-    actor DJ as ゲストDJ
+    actor DJ as ゲスト
     actor OP as オペレーター(OP)
     participant C# as C# Sidecar (Backend)
     participant UI as Tauri UI (Frontend)
     participant OBS as OBS Studio
 
-    DJ->>カメラ: レコード/CDJ画面を設置
+    DJ->>カメラ: レコード/CDプレイヤー画面を設置
     Note over C# internally: 常時カメラストリームをキャプチャ & OCR解析
     C#->>UI: リアルタイムにプレビュー画像とOCR暫定結果を送信
     Note over OP: UI上でOCR結果の誤字やレイアウトを確認・修正(Staging)
